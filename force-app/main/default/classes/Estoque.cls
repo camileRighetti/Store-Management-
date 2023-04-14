@@ -1,74 +1,55 @@
 public class Estoque {
-  //estoque precisa receber um produto e uma quantidade, produto é uma classe e recebe uma quantidade
+  private Estoque__c est;
+  public Map<EstoqueProduto__c, Decimal> prods;
 
-  public Map<Produto, Integer> EstoqueProduto;
-
-  public String cidade;
-  public String nome;
-
-  public Estoque(String cidade, String nome) {
-    this.cidade = cidade;
-    this.nome = nome;
-    EstoqueProduto = new Map<Produto, Integer>();
+  public Estoque(String name) {
+    est = new Estoque__c();
+    est.Name = name;
+    insert est;
+    prods = new Map<EstoqueProduto__c, Decimal>();
   }
 
-  public void IncrementaQuantidadeProdutoDescricao(
-    String descricao,
-    Integer quantidade
+  public void addProdutoEstoque(
+    Map<EstoqueProduto__c, Decimal> estoqueProdutos
   ) {
-    for (Produto p : EstoqueProduto.keySet()) {
-      if (p.GetDescricao() == descricao) {
-        addProduto(p, quantidade);
-      }
-    }
-  }
-  //metodo que adiciona produtos no estoqueProduto
+    List<EstoqueProduto__c> estoqueProdutoObj = new List<EstoqueProduto__c>();
+    //Map<EstoqueProduto__c, Decimal> estProd = new Map<EstoqueProduto__c, Decimal>();
+    for (EstoqueProduto__c prod : estoqueProdutos.keySet()) {
+      Decimal quantidade = estoqueProdutos.get(prod);
+      prod.Estoque__c = est.Id;
+      prod.quantidade__c = quantidade;
 
-  public void addProduto(Produto p, Integer quantidade) {
-    if (!EstoqueProduto.containsKey(p)) {
-      EstoqueProduto.put(p, 0); //se nao houver uma chave, adiciona uma chave com o valor 0
+      prods.put(prod, quantidade);
+      estoqueProdutoObj.add(prod);
     }
-    EstoqueProduto.put(p, (EstoqueProduto.get(p) + quantidade)); //adiciona quantidade no produto que antes estava como 0
-  }
-  //remove produto de estoque
-  public void removeProduto(Produto p, Integer quantidade) {
-    if (EstoqueProduto.containsKey(p)) {
-      //verifica a quantidade atual de p em estoqueProduto
-
-      Integer quantidadeAtual = EstoqueProduto.get(p);
-
-      if (quantidadeAtual >= quantidade) {
-        quantidadeAtual -= quantidade;
-        EstoqueProduto.put(p, quantidadeAtual);
-      } else {
-        EstoqueProduto.remove(p);
-      }
-    }
+    //prods.add(estProd);
+    Database.insert(estoqueProdutoObj);
   }
 
-  //metodo tem estoque, usa para adionar uma quantidade no pedido
+  //metodo tem estoque usa o metodo busca qtd e metodo compara qtd
 
-  public Integer getEstoque(Produto p) {
-    Integer qtd = EstoqueProduto.get(p);
-
-    if (EstoqueProduto.containsKey(p) && qtd > 0) {
-      return qtd;
-    } else {
-      return null;
-    }
+  public static boolean temEstoque(produtos_do_pedido__c pp) {
+    Id est = pp.Pedido__r.loja__r.Estoque__c;
+    Id pedido = pp.Pedido__c;
+    Id produtoId = pp.produto__c;
+    Decimal qtdPedido = pp.quantidade__c;
+    Decimal qtdEstoque = buscaQtd(produtoId, est);
+    return qtdPedido <= qtdEstoque;
   }
-  //metodo pra pegar o produto com o menor estoque.
-  //precisa iterar sobre a lista de estoqueProduto, usa for each porque
-  // vai precisar fazer end to end da lista, como é o valor de estoque que vai ser o mandatorio
-  // utiliza o keySet que ira retornar o set de todas chaves
-  public List<Produto> getProdutosEstoqueMenor(Integer Valor) {
-    List<Produto> produtosEstoque = new List<Produto>();
-    for (Produto prod : EstoqueProduto.keySet()) {
-      Integer quantidade = EstoqueProduto.get(prod); //atraves do map, faz um get na chave produto que ira retornar o valor dessa chave
-      if (quantidade < Valor) {
-        produtosEstoque.add(prod);
-      }
+  private static Decimal buscaQtd(Id produtoId, Id est) {
+    List<EstoqueProduto__c> produtosEstoque = [
+      SELECT Id, quantidade__c
+      FROM EstoqueProduto__c
+      WHERE produto__c = :produtoId AND Estoque__c = :est
+    ];
+    if (!produtosEstoque.isEmpty()) {
+      return produtosEstoque[0].quantidade__c;
     }
-    return produtosEstoque;
+
+    return 0;
+  }
+
+  public Id getId() {
+    return est.Id;
   }
 }
