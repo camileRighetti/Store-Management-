@@ -26,8 +26,7 @@ public class Estoque {
     Database.insert(estoqueProdutoObj);
   }
 
-  //metodo tem estoque usa o metodo busca qtd e metodo compara qtd
-
+  //metodo temEstoque usa o metodo busca qtd e metodo compara quantidade em estoque e a quantidade do pedido
   public static boolean temEstoque(produtos_do_pedido__c pp) {
     Id est = pp.Pedido__r.loja__r.Estoque__c;
     Id pedido = pp.Pedido__c;
